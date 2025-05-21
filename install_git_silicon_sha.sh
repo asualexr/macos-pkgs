@@ -139,7 +139,7 @@ fi
 echo -e "\n=== 3. УСТАНОВКА ОСНОВНЫХ ПРИЛОЖЕНИЙ ==="
 
 echo "ℹ Устанавливаю приложения (Yandex, Telegram, KeePassXC, Microsoft Office)..."
-su - $username -c 'brew install --cask microsoft-office keepassxc yandex telegram'
+su - $username -c 'brew install --cask microsoft-office keepassxc yandex telegram yubico-authenticator anydesk'
 
 # ==============================================
 # 4. УСТАНОВКА CISCO SECURE CLIENT (VPN ONLY)
