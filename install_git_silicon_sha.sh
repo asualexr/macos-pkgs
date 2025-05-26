@@ -228,21 +228,33 @@ if ! pkgutil --flatten "$TMP_DIR" "$OUTPUT_PKG"; then
 fi
 
 # Установка с учетом архитектуры
-echo "⚙ Устанавливаем Cisco VPN..."
-INSTALL_CMD=()
+#echo "⚙ Устанавливаем Cisco VPN..."
+#INSTALL_CMD=()
+#if [[ $(uname -m) == "arm64" ]]; then
+#    echo "Обнаружен Apple Silicon (M1/M2), используем Rosetta 2..."
+#    INSTALL_CMD=(arch -x86_64 /usr/sbin/installer)
+#else
+#    INSTALL_CMD=(/usr/sbin/installer)
+#fi
+
+#if ! "${INSTALL_CMD[@]}" -pkg "$OUTPUT_PKG" -target /; then
+#    echo "✖ Ошибка: установка не удалась!" >&2
+#    rm -rf "$TMP_DIR" "$OUTPUT_PKG" "$CISCO_TMP"
+#    exit 1
+#fi
+# Установка с учетом архитектуры
+echo "Устанавливаем Cisco VPN..."
 if [[ $(uname -m) == "arm64" ]]; then
     echo "Обнаружен Apple Silicon (M1/M2), используем Rosetta 2..."
-    INSTALL_CMD=(arch -x86_64 /usr/sbin/installer)
+    # Создаем временную копию установщика для Rosetta
+    if [ ! -f "/usr/sbin/installer_x86_64" ]; then
+        echo "Создаем x86_64 копию установщика..."
+        cp /usr/sbin/installer /usr/sbin/installer_x86_64
+    fi
+    arch -x86_64 /usr/sbin/installer_x86_64 -pkg "$OUTPUT_PKG" -target /
 else
-    INSTALL_CMD=(/usr/sbin/installer)
+    installer -pkg "$OUTPUT_PKG" -target /
 fi
-
-if ! "${INSTALL_CMD[@]}" -pkg "$OUTPUT_PKG" -target /; then
-    echo "✖ Ошибка: установка не удалась!" >&2
-    rm -rf "$TMP_DIR" "$OUTPUT_PKG" "$CISCO_TMP"
-    exit 1
-fi
-
 # Проверка установки
 if [ -x "/opt/cisco/secureclient/bin/vpn" ]; then
     echo "✓ Cisco Secure Client (VPN Only) успешно установлен"
