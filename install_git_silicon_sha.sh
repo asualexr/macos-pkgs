@@ -228,47 +228,21 @@ if ! pkgutil --flatten "$TMP_DIR" "$OUTPUT_PKG"; then
 fi
 
 # Установка с учетом архитектуры
-#echo "⚙ Устанавливаем Cisco VPN..."
-#INSTALL_CMD=()
-#if [[ $(uname -m) == "arm64" ]]; then
-#    echo "Обнаружен Apple Silicon (M1/M2), используем Rosetta 2..."
-#    INSTALL_CMD=(arch -x86_64 /usr/sbin/installer)
-#else
-#    INSTALL_CMD=(/usr/sbin/installer)
-#fi
-
-#if ! "${INSTALL_CMD[@]}" -pkg "$OUTPUT_PKG" -target /; then
-#    echo "✖ Ошибка: установка не удалась!" >&2
-#    rm -rf "$TMP_DIR" "$OUTPUT_PKG" "$CISCO_TMP"
-#    exit 1
-#fi
-# Установка с учетом архитектуры
-echo "Устанавливаем Cisco VPN..."
+echo "⚙ Устанавливаем Cisco VPN..."
+INSTALL_CMD=()
 if [[ $(uname -m) == "arm64" ]]; then
-    echo "Обнаружен Apple Silicon (M1/M2), используем альтернативный метод..."
-    # Используем временную директорию для установки
-    TEMP_INSTALL_DIR="/tmp/cisco_install"
-    mkdir -p "$TEMP_INSTALL_DIR"
-    
-    # Монтируем пакет в временную директорию
-    if ! installer -pkg "$OUTPUT_PKG" -target "$TEMP_INSTALL_DIR"; then
-        echo "✖ Ошибка: не удалось смонтировать пакет!" >&2
-        exit 1
-    fi
-    
-    # Копируем файлы в нужные места
-    if [ -d "$TEMP_INSTALL_DIR/opt/cisco" ]; then
-        sudo cp -R "$TEMP_INSTALL_DIR/opt/cisco" /opt/
-    else
-        echo "✖ Ошибка: не найдены файлы Cisco в пакете!" >&2
-        exit 1
-    fi
-    
-    # Очистка
-    rm -rf "$TEMP_INSTALL_DIR"
+    echo "Обнаружен Apple Silicon (M1/M2), используем Rosetta 2..."
+    INSTALL_CMD=(arch -x86_64 /usr/sbin/installer)
 else
-    installer -pkg "$OUTPUT_PKG" -target /
+    INSTALL_CMD=(/usr/sbin/installer)
 fi
+
+if ! "${INSTALL_CMD[@]}" -pkg "$OUTPUT_PKG" -target /; then
+    echo "✖ Ошибка: установка не удалась!" >&2
+    rm -rf "$TMP_DIR" "$OUTPUT_PKG" "$CISCO_TMP"
+    exit 1
+fi
+
 # Очистка временных файлов
 rm -rf "$TMP_DIR" "$OUTPUT_PKG" "$CISCO_TMP"
 
