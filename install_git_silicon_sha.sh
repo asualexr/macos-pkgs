@@ -245,23 +245,30 @@ fi
 # Установка с учетом архитектуры
 echo "Устанавливаем Cisco VPN..."
 if [[ $(uname -m) == "arm64" ]]; then
-    echo "Обнаружен Apple Silicon (M1/M2), используем Rosetta 2..."
-    # Создаем временную копию установщика для Rosetta
-    if [ ! -f "/usr/sbin/installer_x86_64" ]; then
-        echo "Создаем x86_64 копию установщика..."
-        cp /usr/sbin/installer /usr/sbin/installer_x86_64
+    echo "Обнаружен Apple Silicon (M1/M2), используем альтернативный метод..."
+    # Используем временную директорию для установки
+    TEMP_INSTALL_DIR="/tmp/cisco_install"
+    mkdir -p "$TEMP_INSTALL_DIR"
+    
+    # Монтируем пакет в временную директорию
+    if ! installer -pkg "$OUTPUT_PKG" -target "$TEMP_INSTALL_DIR"; then
+        echo "✖ Ошибка: не удалось смонтировать пакет!" >&2
+        exit 1
     fi
-    arch -x86_64 /usr/sbin/installer_x86_64 -pkg "$OUTPUT_PKG" -target /
+    
+    # Копируем файлы в нужные места
+    if [ -d "$TEMP_INSTALL_DIR/opt/cisco" ]; then
+        sudo cp -R "$TEMP_INSTALL_DIR/opt/cisco" /opt/
+    else
+        echo "✖ Ошибка: не найдены файлы Cisco в пакете!" >&2
+        exit 1
+    fi
+    
+    # Очистка
+    rm -rf "$TEMP_INSTALL_DIR"
 else
     installer -pkg "$OUTPUT_PKG" -target /
 fi
-# Проверка установки
-if [ -x "/opt/cisco/secureclient/bin/vpn" ]; then
-    echo "✓ Cisco Secure Client (VPN Only) успешно установлен"
-else
-    echo "⚠ Предупреждение: VPN-клиент установлен, но бинарник не найден" >&2
-fi
-
 # Очистка временных файлов
 rm -rf "$TMP_DIR" "$OUTPUT_PKG" "$CISCO_TMP"
 
